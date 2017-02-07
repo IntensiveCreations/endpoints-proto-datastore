@@ -75,7 +75,7 @@ NDB_PROPERTY_TO_PROTO = {
 }
 
 
-def GetKeywordArgs(prop, include_default=True):
+def GetKeywordArgs(prop, include_default=True, patch_mode=False):
   """Captures attributes from an NDB property to be passed to a ProtoRPC field.
 
   Args:
@@ -90,7 +90,7 @@ def GetKeywordArgs(prop, include_default=True):
         ProtoRPC field as keyword arguments.
   """
   kwargs = {
-      'required': prop._required,
+      'required': False if patch_mode else prop._required,
       'repeated': prop._repeated,
   }
   if include_default and hasattr(prop, '_default'):
@@ -100,7 +100,7 @@ def GetKeywordArgs(prop, include_default=True):
   return kwargs
 
 
-def MessageFromSimpleField(field, prop, index):
+def MessageFromSimpleField(field, prop, index, patch_mode=False):
   """Converts a property to the corresponding field of specified type.
 
   Assumes index is the only positional argument needed to create an instance
@@ -116,7 +116,7 @@ def MessageFromSimpleField(field, prop, index):
     An instance of field with attributes corresponding to those in prop and
         index corresponding to that which was passed in.
   """
-  return field(index, **GetKeywordArgs(prop))
+  return field(index, **GetKeywordArgs(prop, patch_mode=patch_mode))
 
 
 def StructuredPropertyToProto(prop, index):

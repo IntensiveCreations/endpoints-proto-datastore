@@ -916,7 +916,7 @@ class EndpointsModel(ndb.Model):
     return itertools.chain(property_values, alias_values)
 
   @classmethod
-  def _MessageFields(cls, message_fields_schema, allow_message_fields=True):
+  def _MessageFields(cls, message_fields_schema, allow_message_fields=True, patch_mode=False):
     """Creates ProtoRPC fields from a MessageFieldsSchema.
 
     Verifies that each property is valid (may cause exception) and then uses the
@@ -953,7 +953,8 @@ class EndpointsModel(ndb.Model):
 
       if utils.IsSimpleField(to_proto):
         proto_attr = ndb_utils.MessageFromSimpleField(to_proto, prop,
-                                                      field_index)
+                                                      field_index,
+                                                      patch_mode=patch_mode)
       elif callable(to_proto):
         proto_attr = to_proto(prop, field_index)
       else:
@@ -971,7 +972,7 @@ class EndpointsModel(ndb.Model):
     return message_fields
 
   @classmethod
-  def ProtoModel(cls, fields=None, allow_message_fields=True):
+  def ProtoModel(cls, fields=None, allow_message_fields=True, patch_mode=False):
     """Creates a ProtoRPC message class using a subset of the class properties.
 
     Creates a MessageFieldsSchema from the passed in fields (may cause exception
@@ -1004,8 +1005,9 @@ class EndpointsModel(ndb.Model):
       fields = cls._message_fields_schema
     # If fields is None, either the module user manaully removed the default
     # value or some bug has occurred in the library
+    basename = cls.__name__ + 'PatchProto' if patch_mode else cls.__name__ + 'Proto'
     message_fields_schema = MessageFieldsSchema(fields,
-                                                basename=cls.__name__ + 'Proto')
+                                                basename=basename)
 
     if message_fields_schema in cls._proto_models:
       cached_model = cls._proto_models[message_fields_schema]
@@ -1017,7 +1019,8 @@ class EndpointsModel(ndb.Model):
       return cached_model
 
     message_fields = cls._MessageFields(message_fields_schema,
-                                        allow_message_fields=allow_message_fields)
+                                        allow_message_fields=allow_message_fields,
+                                        patch_mode=patch_mode)
 
     # TODO(dhermes): This behavior should be regulated more directly.
     #                This is to make sure the schema name in the discovery
